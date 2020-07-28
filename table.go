@@ -1,5 +1,19 @@
 package partoo
 
+//type Dialect string
+//
+//const (
+//	Mysql Dialect = "mysql"
+//	Postgres Dialect = "postgres"
+//)
+//
+//var dialect Dialect
+//
+//func SetDialect(d Dialect) {
+//	dialect = d
+//}
+//
+
 type Table interface {
 	// The name of the ... table
 	TableName() string

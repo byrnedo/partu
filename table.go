@@ -97,14 +97,14 @@ func Select(t Table) string {
 	)
 }
 
-func SelectOne(t Table) string {
+func SelectOne(t Table) (string, interface{}) {
 	cols := t.Columns()
 	return fmt.Sprintf(
 		"%s WHERE %s = %s",
 		Select(t),
 		cols.Names()[0],
 		placeholder(1),
-	)
+	), cols.Fields()[0]
 }
 
 func Insert(t Table) (string, []interface{}) {

@@ -12,16 +12,16 @@ const (
 	Postgres Dialect = "postgres"
 )
 
-var (
-	dialect = Postgres
-)
-
-func SetDialect(d Dialect) {
-	dialect = d
+type Partoo struct {
+	dialect Dialect
 }
 
-func placeholder(i int) string {
-	switch dialect {
+func New(dialect Dialect) *Partoo {
+	return &Partoo{dialect: dialect}
+}
+
+func (p Partoo) placeholder(i int) string {
+	switch p.dialect {
 	case Mysql:
 		return fmt.Sprintf("$k")
 	default:
@@ -29,19 +29,15 @@ func placeholder(i int) string {
 	}
 }
 
-func placeholders(low, high int) string {
+func (p Partoo) placeholders(low, high int) string {
 	parts := make([]string, high-low)
 	for i := low; i < high; i++ {
-		parts[i-low] = placeholder(i)
+		parts[i-low] = p.placeholder(i)
 	}
 	return strings.Join(parts, ",")
 }
 
-type Col struct {
-	Name  string
-	Field interface{}
-}
-type Cols []Col
+type Cols []interface{}
 
 type Table interface {
 	// The name of the ... table
@@ -67,29 +63,8 @@ func (c ColNames) Strings() []string {
 	return c
 }
 
-func (cm Cols) Names() (ret ColNames) {
-	idx := 0
-	ret = make([]string, len(cm))
-	for _, v := range cm {
-		ret[idx] = v.Name
-		idx++
-	}
-	return
-}
-
-func (cm Cols) Fields() (ret []interface{}) {
-
-	idx := 0
-	ret = make([]interface{}, len(cm))
-	for _, v := range cm {
-		ret[idx] = v.Field
-		idx++
-	}
-	return
-}
-
-func Select(t Table) string {
-	cols := t.Columns()
+func (p Partoo) Select(t Table) string {
+	cols := p.NamedFields(t)
 	return fmt.Sprintf(
 		"SELECT %s FROM %s",
 		strings.Join(cols.Names().Strings(), ","),
@@ -97,48 +72,53 @@ func Select(t Table) string {
 	)
 }
 
-func SelectOne(t Table) (string, interface{}) {
-	cols := t.Columns()
+func (p Partoo) SelectOne(t Table) (string, interface{}) {
+	cols := p.NamedFields(t)
+	first := cols[0]
 	return fmt.Sprintf(
 		"%s WHERE %s = %s",
-		Select(t),
-		cols.Names()[0],
-		placeholder(1),
-	), cols.Fields()[0]
+		p.Select(t),
+		first.Name,
+		p.placeholder(1),
+	), first.Field
 }
 
-func Insert(t Table) (string, []interface{}) {
-	cols := t.Columns()
+func (p Partoo) NamedFields(t Table) NamedFields {
+	return getColumnNames(t)
+}
+
+func (p Partoo) Insert(t Table) (string, []interface{}) {
+	cols := p.NamedFields(t)
 
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s)",
 		t.TableName(),
 		strings.Join(cols.Names()[1:].Strings(), ","),
-		placeholders(1, len(cols)),
+		p.placeholders(1, len(cols)),
 	), cols.Fields()[1:]
 }
 
-func Update(t Table) (string, []interface{}) {
-	cols := t.Columns()
+func (p Partoo) Update(t Table) (string, []interface{}) {
+	namedFields := p.NamedFields(t)
 
-	names := cols.Names()[1:]
+	names := namedFields.Names()[1:]
 	setPlaceholders := make([]string, len(names))
 	for i, n := range names {
-		setPlaceholders[i] = fmt.Sprintf("%s = %s", n, placeholder(i+1))
+		setPlaceholders[i] = fmt.Sprintf("%s = %s", n, p.placeholder(i+1))
 	}
 
 	return fmt.Sprintf(
 		"UPDATE %s SET %s",
 		t.TableName(),
 		strings.Join(setPlaceholders, ","),
-	), cols.Fields()[1:]
+	), namedFields.Fields()[1:]
 }
 
-func UpdateOne(t Table) (string, []interface{}) {
-	upd, args := Update(t)
-	cols := t.Columns()
-	fields := cols.Fields()
-	names := cols.Names()
+func (p Partoo) UpdateOne(t Table) (string, []interface{}) {
+	upd, args := p.Update(t)
+	namedFields := p.NamedFields(t)
+	fields := namedFields.Fields()
+	names := namedFields.Names()
 	args = append(args, fields[0])
-	return fmt.Sprintf("%s WHERE %s = %s", upd, names[0], placeholder(len(fields))), args
+	return fmt.Sprintf("%s WHERE %s = %s", upd, names[0], p.placeholder(len(fields))), args
 }

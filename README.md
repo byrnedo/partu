@@ -22,18 +22,18 @@ import (
 )
 
 type MyModel struct {
-    ID  string
-    Foo string
+    ID  string `sql:"id"`
+    Foo string `sql:"foo"`
 }
 
 func (t MyModel) TableName() string {
     return "some_table"
 }
 
-func (t *MyModel) Columns() Cols {
-    return Cols{
-        {"id", &t.ID},
-        {"foo", &t.Foo},
+func (t *MyModel) Columns() partoo.Cols {
+    return partoo.Cols{
+        t.ID,
+        &t.Foo,
     }
 }
 ```
@@ -42,7 +42,8 @@ Then use partoo to build some queries:
 
 ```go
 m := &MyModel{}
-sqlStr, args := partoo.Insert(m)
+p := partoo.New(partoo.Postgres)
+sqlStr, args := p.Insert(m)
 // Return corresponds to:
 // `INSERT INTO some_table ( foo ) VALUES ( $1 )`, []interface{}{&m.Foo}
 ```

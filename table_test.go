@@ -6,8 +6,8 @@ import (
 )
 
 type testModel struct {
-	ID  string
-	Foo string
+	ID  string `sql:"id"`
+	Foo string `sql:"foo"`
 }
 
 func (t testModel) TableName() string {
@@ -16,17 +16,17 @@ func (t testModel) TableName() string {
 
 func (t *testModel) Columns() Cols {
 	return Cols{
-		{"id", &t.ID},
-		{"foo", &t.Foo},
+		&t.ID,
+		&t.Foo,
 	}
 }
 
 func TestColNames_Prefix(t *testing.T) {
 
 	m := &testModel{}
-	cols := m.Columns()
+	p := New(Postgres)
+	cols := p.NamedFields(m)
 	aliased := cols.Names().Prefix("alias")
-
 	if reflect.DeepEqual(aliased, ColNames{"alias.id", "alias.foo"}) == false {
 		t.Fatal("wrong aliases", aliased)
 	}
@@ -34,8 +34,9 @@ func TestColNames_Prefix(t *testing.T) {
 
 func TestInsert(t *testing.T) {
 	m := &testModel{}
+	p := New(Postgres)
 
-	sqlStr, args := Insert(m)
+	sqlStr, args := p.Insert(m)
 	if sqlStr != "INSERT INTO test (foo) VALUES ($1)" {
 		t.Fatal(sqlStr)
 	}
@@ -47,8 +48,9 @@ func TestInsert(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	m := &testModel{}
+	p := New(Postgres)
 
-	sqlStr, args := Update(m)
+	sqlStr, args := p.Update(m)
 	if sqlStr != "UPDATE test SET foo = $1" {
 		t.Fatal(sqlStr)
 	}
@@ -60,8 +62,9 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateOne(t *testing.T) {
 	m := &testModel{}
+	p := New(Postgres)
 
-	sqlStr, args := UpdateOne(m)
+	sqlStr, args := p.UpdateOne(m)
 	if sqlStr != "UPDATE test SET foo = $1 WHERE id = $2" {
 		t.Fatal(sqlStr)
 	}
@@ -70,3 +73,4 @@ func TestUpdateOne(t *testing.T) {
 	}
 	t.Log(sqlStr)
 }
+

@@ -14,6 +14,10 @@ Just generates sql.
 Implement the `Table` interface on your model type
 
 ```go
+package mine
+import (
+    "github.com/byrnedo/partoo"
+)
 
 type MyModel struct {
     ID  string
@@ -32,11 +36,11 @@ func (t *MyModel) Columns() Cols {
 }
 ```
 
-Then build some queries:
+Then use partoo to build some queries:
 
 ```go
 m := &MyModel{}
-sqlStr, args := Insert(m)
+sqlStr, args := partoo.Insert(m)
 // Return corresponds to:
 // `INSERT INTO some_table ( foo ) VALUES ( $1 )`, []interface{}{&m.Foo}
 ```

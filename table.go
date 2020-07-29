@@ -28,10 +28,23 @@ type AutoID interface {
 
 type Builder struct {
 	dialect Dialect
+	tagName string
 }
 
 func New(dialect Dialect) *Builder {
 	return &Builder{dialect: dialect}
+}
+
+func (p *Builder) SetTag(tag string) Builder {
+	p.tagName = tag
+	return p
+}
+
+func  (p Builder) Tag() string {
+	if p.tagName == "" {
+		return "sql"
+	}
+	return p.tagName
 }
 
 func (p Builder) placeholder(i int) string {
@@ -72,7 +85,7 @@ func (p Builder) SelectOne(t Table) (string, interface{}) {
 }
 
 func (p Builder) NamedFields(t Table) namedFields {
-	return getColumnNames(t)
+	return getColumnNames(p.Tag(), t)
 }
 
 func (p Builder) Insert(t Table) (string, []interface{}) {

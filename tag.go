@@ -33,10 +33,10 @@ func (cm namedFields) Fields() (ret []interface{}) {
 }
 
 func (p Builder) ColName(table Table, field interface{}) string {
-	return findFieldTag(reflect.ValueOf(table), reflect.ValueOf(field))
+	return findFieldTag(p.Tag(), reflect.ValueOf(table), reflect.ValueOf(field))
 }
 
-func getColumnNames(table Table) (ret []namedField) {
+func getColumnNames(tag string, table Table) (ret []namedField) {
 	t := reflect.TypeOf(table)
 
 	v := reflect.ValueOf(table)
@@ -46,15 +46,15 @@ func getColumnNames(table Table) (ret []namedField) {
 		t = t.Elem()
 	}
 	for _, col := range table.Columns() {
-		ret = append(ret, namedField{Name: findFieldTag(v, reflect.ValueOf(col)), Field: col})
+		ret = append(ret, namedField{Name: findFieldTag(tag, v, reflect.ValueOf(col)), Field: col})
 	}
 	return
 }
 
-func findFieldTag(structValue reflect.Value, fieldValue reflect.Value) string {
+func findFieldTag(tag string, structValue reflect.Value, fieldValue reflect.Value) string {
 	sf := findStructField(structValue, fieldValue)
 
-	colName := sf.Tag.Get("sql")
+	colName := sf.Tag.Get(tag)
 	if colName == "" {
 		panic("struct field must have `sql` tag if included in Columns() output")
 	}

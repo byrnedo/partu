@@ -10,7 +10,7 @@ If you want to do something else, write the query by hand you degenerate!
 ### Assumptions
 
 - Your ID column is the first column in the Columns list
-- You always update every field
+- You always update every field except the ID
 - You always select every field
 
 Implement the `Table` interface on your model type
@@ -21,6 +21,7 @@ import (
     "github.com/byrnedo/partoo"
 )
 
+// Note you must have the tag right now, there is no default
 type MyModel struct {
     ID  string `sql:"id"`
     Foo string `sql:"foo"`

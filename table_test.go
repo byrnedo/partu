@@ -5,25 +5,35 @@ import (
 	"testing"
 )
 
-type testModel struct {
+type baseModel struct {
 	ID  string `sql:"id"`
 	Foo string `sql:"foo"`
 }
 
-func (t testModel) TableName() string {
+func (t baseModel) TableName() string {
 	return "test"
 }
 
-func (t *testModel) Columns() Cols {
+func (t *baseModel) Columns() Cols {
 	return Cols{
 		&t.ID,
 		&t.Foo,
 	}
 }
 
+type manualIDModel struct {
+	baseModel
+}
+
+func (m manualIDModel) AutoID() bool {
+	return false
+}
+
+
+
 func TestColNames_Prefix(t *testing.T) {
 
-	m := &testModel{}
+	m := &baseModel{}
 	p := New(Postgres)
 	cols := p.NamedFields(m)
 	aliased := cols.Names().Prefix("alias")
@@ -33,7 +43,7 @@ func TestColNames_Prefix(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	m := &testModel{}
+	m := &baseModel{}
 	p := New(Postgres)
 
 	sqlStr, args := p.Insert(m)
@@ -43,11 +53,19 @@ func TestInsert(t *testing.T) {
 	if len(args) != 1 {
 		t.Fatal(len(args))
 	}
-	t.Log(sqlStr)
+
+	manualModel := &manualIDModel{}
+	sqlStr, args = p.Insert(manualModel)
+	if sqlStr != "INSERT INTO test (id,foo) VALUES ($1,$2)" {
+		t.Fatal(sqlStr)
+	}
+	if len(args) != 2 {
+		t.Fatal(len(args))
+	}
 }
 
 func TestUpdate(t *testing.T) {
-	m := &testModel{}
+	m := &baseModel{}
 	p := New(Postgres)
 
 	sqlStr, args := p.Update(m)
@@ -61,7 +79,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateOne(t *testing.T) {
-	m := &testModel{}
+	m := &baseModel{}
 	p := New(Postgres)
 
 	sqlStr, args := p.UpdateOne(m)
@@ -76,7 +94,7 @@ func TestUpdateOne(t *testing.T) {
 
 
 func TestPartoo_UpsertOne(t *testing.T) {
-	m := &testModel{}
+	m := &baseModel{}
 	p := New(Postgres)
 	sqlStr, args := p.UpsertOne(m)
 	if sqlStr != "INSERT INTO test (foo) VALUES ($1) ON CONFLICT (id) DO UPDATE SET foo = $2" {

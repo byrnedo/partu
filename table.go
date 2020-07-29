@@ -12,6 +12,20 @@ const (
 	Postgres Dialect = "postgres"
 )
 
+type Cols []interface{}
+
+type Table interface {
+	// The name of the ... table
+	TableName() string
+	// The columns mapped to the fields in your struct, by ref please
+	Columns() Cols
+}
+
+// Implement if you want to control inserting the id
+type AutoID interface {
+	AutoID() bool
+}
+
 type partoo struct {
 	dialect Dialect
 }
@@ -35,32 +49,6 @@ func (p partoo) placeholders(low, high int) string {
 		parts[i-low] = p.placeholder(i)
 	}
 	return strings.Join(parts, ",")
-}
-
-type Cols []interface{}
-
-type Table interface {
-	// The name of the ... table
-	TableName() string
-	// The columns mapped to the fields in your struct, by ref please
-	Columns() Cols
-}
-
-type ColNames []string
-
-func (c ColNames) Prefix(alias string) ColNames {
-
-	if alias != "" {
-		alias += "."
-	}
-	for i, colName := range c {
-		c[i] = alias + colName
-	}
-	return c
-}
-
-func (c ColNames) Strings() []string {
-	return c
 }
 
 func (p partoo) Select(t Table) string {
@@ -90,12 +78,20 @@ func (p partoo) NamedFields(t Table) namedFields {
 func (p partoo) Insert(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
+	autoID, ok := t.(AutoID)
+	colsToInsert := cols.Names()[1:].Strings()
+	args := cols.Fields()[1:]
+	if ok && !autoID.AutoID() {
+		colsToInsert = cols.Names().Strings()
+		args = cols.Fields()
+	}
+
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s)",
 		t.TableName(),
-		strings.Join(cols.Names()[1:].Strings(), ","),
-		p.placeholders(1, len(cols)),
-	), cols.Fields()[1:]
+		strings.Join(colsToInsert, ","),
+		p.placeholders(1, len(colsToInsert)+1),
+	), args
 }
 
 func (p partoo) Update(t Table) (string, []interface{}) {
@@ -166,4 +162,21 @@ func (p partoo) upsertPostgres(t Table) (string, []interface{}) {
 		cols[0].Name,
 		setPlaceholders,
 	), append(cols.Fields()[1:], cols.Fields()[1:]...)
+}
+
+type ColNames []string
+
+func (c ColNames) Prefix(alias string) ColNames {
+
+	if alias != "" {
+		alias += "."
+	}
+	for i, colName := range c {
+		c[i] = alias + colName
+	}
+	return c
+}
+
+func (c ColNames) Strings() []string {
+	return c
 }

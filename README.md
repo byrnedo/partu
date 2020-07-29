@@ -21,7 +21,7 @@ import (
     "github.com/byrnedo/partoo"
 )
 
-// Note you must have the tag right now, there is no default
+// Note you must have the tag right now, there is no default, but you can override it with `SetTag`
 type MyModel struct {
     ID  string `sql:"id"`
     Foo string `sql:"foo"`

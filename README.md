@@ -3,6 +3,8 @@
 Very very very simple query builder for select, insert and update commands.
 Just generates sql.
 
+If you want to do something else, write the query by hand you degenerate!
+
 ## Usage
 
 ### Assumptions

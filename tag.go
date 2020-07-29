@@ -87,7 +87,7 @@ func (b Builder) findFieldTag(structValue reflect.Value, fieldValue reflect.Valu
 // If found, the field info will be returned. Otherwise, nil will be returned.
 func (b Builder) findStructField(structValue reflect.Value, fieldValue reflect.Value) *reflect.StructField {
 	t := fieldValue.Elem().Type()
-	if v, ok := fieldValue.Elem().Interface().(driver.Valuer); ok{
+	if v, ok := fieldValue.Elem().Interface().(driver.Valuer); ok {
 		val, err := v.Value()
 		if err != nil {
 			panic(err)
@@ -101,7 +101,7 @@ func (b Builder) findStructField(structValue reflect.Value, fieldValue reflect.V
 		if ptr == structValue.Field(i).UnsafeAddr() {
 			// do additional type comparison because it's possible that the address of
 			// an embedded struct is the same as the first field of the embedded struct
-			if  sf.Type.Kind() == reflect.Struct {
+			if sf.Type.Kind() == reflect.Struct {
 				if sf.Type == t {
 					return &sf
 				}

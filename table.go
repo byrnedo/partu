@@ -40,7 +40,7 @@ func (p *Builder) SetTag(tag string) *Builder {
 	return p
 }
 
-func  (p Builder) Tag() string {
+func (p Builder) Tag() string {
 	if p.tagName == "" {
 		return "sql"
 	}

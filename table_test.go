@@ -1,15 +1,15 @@
 package partoo_test
 
 import (
-	"reflect"
-	"testing"
 	"github.com/byrnedo/partoo"
 	"github.com/lib/pq"
+	"reflect"
+	"testing"
 )
 
 type baseModel struct {
-	ID  string `sql:"id"`
-	Foo string `sql:"foo"`
+	ID      string   `sql:"id"`
+	Foo     string   `sql:"foo"`
 	PQArray []string `sql:"pq_array"`
 }
 
@@ -32,8 +32,6 @@ type manualIDModel struct {
 func (m manualIDModel) AutoID() bool {
 	return false
 }
-
-
 
 func TestColNames_Prefix(t *testing.T) {
 
@@ -95,7 +93,6 @@ func TestUpdateOne(t *testing.T) {
 	}
 	t.Log(sqlStr)
 }
-
 
 func TestPartoo_UpsertOne(t *testing.T) {
 	m := &baseModel{}

@@ -74,3 +74,15 @@ func TestUpdateOne(t *testing.T) {
 	t.Log(sqlStr)
 }
 
+
+func TestPartoo_UpsertOne(t *testing.T) {
+	m := &testModel{}
+	p := New(Postgres)
+	sqlStr, args := p.UpsertOne(m)
+	if sqlStr != "INSERT INTO test (foo) VALUES ($1) ON CONFLICT (id) DO UPDATE SET foo = $2" {
+		t.Fatal(sqlStr)
+	}
+	if len(args) != 2 {
+		t.Fatal(len(args))
+	}
+}

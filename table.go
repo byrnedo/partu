@@ -101,16 +101,12 @@ func (p partoo) Insert(t Table) (string, []interface{}) {
 func (p partoo) Update(t Table) (string, []interface{}) {
 	namedFields := p.NamedFields(t)
 
-	names := namedFields.Names()[1:]
-	setPlaceholders := make([]string, len(names))
-	for i, n := range names {
-		setPlaceholders[i] = fmt.Sprintf("%s = %s", n, p.placeholder(i+1))
-	}
+	setPlaceholders := p.generateUpdatePlaceholders(namedFields, 1)
 
 	return fmt.Sprintf(
 		"UPDATE %s SET %s",
 		t.TableName(),
-		strings.Join(setPlaceholders, ","),
+		setPlaceholders,
 	), namedFields.Fields()[1:]
 }
 
@@ -121,4 +117,53 @@ func (p partoo) UpdateOne(t Table) (string, []interface{}) {
 	names := namedFields.Names()
 	args = append(args, fields[0])
 	return fmt.Sprintf("%s WHERE %s = %s", upd, names[0], p.placeholder(len(fields))), args
+}
+
+func (p partoo) UpsertOne(t Table) (string, []interface{}) {
+	if p.dialect == Mysql {
+		return p.upsertMysql(t)
+	}
+	return p.upsertPostgres(t)
+}
+
+func (p partoo) generateUpdatePlaceholders(cols namedFields, startIndex int) string {
+
+	names := cols.Names()[1:]
+	setPlaceholders := make([]string, len(names))
+	for i, n := range names {
+		setPlaceholders[i] = fmt.Sprintf("%s = %s", n, p.placeholder(i+startIndex))
+	}
+
+	return strings.Join(setPlaceholders, ",")
+}
+
+func (p partoo) upsertMysql(t Table) (string, []interface{}) {
+
+	cols := p.NamedFields(t)
+
+	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
+
+	return fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE SET %s",
+		t.TableName(),
+		strings.Join(cols.Names()[1:].Strings(), ","),
+		p.placeholders(2, len(cols)),
+		setPlaceholders,
+	), cols.Fields()[1:]
+}
+
+func (p partoo) upsertPostgres(t Table) (string, []interface{}) {
+
+	cols := p.NamedFields(t)
+
+	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
+
+	return fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
+		t.TableName(),
+		strings.Join(cols.Names()[1:].Strings(), ","),
+		p.placeholders(1, len(cols)),
+		cols[0].Name,
+		setPlaceholders,
+	), append(cols.Fields()[1:], cols.Fields()[1:]...)
 }

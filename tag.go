@@ -6,7 +6,7 @@ import (
 
 // dumbStructToHeader converts a struct of string fields (with tag 'header') to a http.Header map
 type namedField struct {
-	Name string
+	Name  string
 	Field interface{}
 }
 
@@ -22,7 +22,6 @@ func (cm namedFields) Names() (ret ColNames) {
 	return
 }
 
-
 func (cm namedFields) Fields() (ret []interface{}) {
 	idx := 0
 	ret = make([]interface{}, len(cm))
@@ -31,6 +30,10 @@ func (cm namedFields) Fields() (ret []interface{}) {
 		idx++
 	}
 	return
+}
+
+func (p partoo) ColName(table Table, field interface{}) string {
+	return findFieldTag(reflect.ValueOf(table), reflect.ValueOf(field))
 }
 
 func getColumnNames(table Table) (ret []namedField) {
@@ -43,16 +46,19 @@ func getColumnNames(table Table) (ret []namedField) {
 		t = t.Elem()
 	}
 	for _, col := range table.Columns() {
-
-		sf := findStructField(v, reflect.ValueOf(col))
-
-		colName := sf.Tag.Get("sql")
-		if colName == "" {
-			panic("struct field must have `sql` tag if included in Columns() output")
-		}
-		ret = append(ret, namedField{Name: colName, Field: col})
+		ret = append(ret, namedField{Name: findFieldTag(v, reflect.ValueOf(col)), Field: col})
 	}
 	return
+}
+
+func findFieldTag(structValue reflect.Value, fieldValue reflect.Value) string {
+	sf := findStructField(structValue, fieldValue)
+
+	colName := sf.Tag.Get("sql")
+	if colName == "" {
+		panic("struct field must have `sql` tag if included in Columns() output")
+	}
+	return colName
 }
 
 // Author: Copied from https://github.com/go-ozzo/ozzo-validation/

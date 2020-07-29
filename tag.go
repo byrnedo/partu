@@ -1,7 +1,14 @@
 package partoo
 
 import (
+	"database/sql/driver"
+	"errors"
 	"reflect"
+)
+
+var (
+	errTagMissing        = errors.New("struct field must have `sql` tag if included in Columns() output")
+	errFieldNotSupported = errors.New("at least one of the field types in Columns() is not supported")
 )
 
 // dumbStructToHeader converts a struct of string fields (with tag 'header') to a http.Header map
@@ -33,10 +40,14 @@ func (cm namedFields) Fields() (ret []interface{}) {
 }
 
 func (p Builder) ColName(table Table, field interface{}) string {
-	return findFieldTag(p.Tag(), reflect.ValueOf(table), reflect.ValueOf(field))
+	ft, err := p.findFieldTag(reflect.ValueOf(table), reflect.ValueOf(field))
+	if err != nil {
+		panic(err)
+	}
+	return ft
 }
 
-func getColumnNames(tag string, table Table) (ret []namedField) {
+func (p Builder) getColumnNames(table Table) (ret []namedField) {
 	t := reflect.TypeOf(table)
 
 	v := reflect.ValueOf(table)
@@ -46,19 +57,27 @@ func getColumnNames(tag string, table Table) (ret []namedField) {
 		t = t.Elem()
 	}
 	for _, col := range table.Columns() {
-		ret = append(ret, namedField{Name: findFieldTag(tag, v, reflect.ValueOf(col)), Field: col})
+		ft, err := p.findFieldTag(v, reflect.ValueOf(col))
+		if err != nil {
+			panic(err)
+		}
+
+		ret = append(ret, namedField{Name: ft, Field: col})
 	}
 	return
 }
 
-func findFieldTag(tag string, structValue reflect.Value, fieldValue reflect.Value) string {
-	sf := findStructField(structValue, fieldValue)
-
-	colName := sf.Tag.Get(tag)
-	if colName == "" {
-		panic("struct field must have `sql` tag if included in Columns() output")
+func (b Builder) findFieldTag(structValue reflect.Value, fieldValue reflect.Value) (string, error) {
+	sf := b.findStructField(structValue, fieldValue)
+	if sf == nil {
+		return "", errFieldNotSupported
 	}
-	return colName
+
+	colName := sf.Tag.Get(b.Tag())
+	if colName == "" {
+		return "", errTagMissing
+	}
+	return colName, nil
 }
 
 // Author: Copied from https://github.com/go-ozzo/ozzo-validation/
@@ -66,14 +85,27 @@ func findFieldTag(tag string, structValue reflect.Value, fieldValue reflect.Valu
 // findStructField looks for a field in the given struct.
 // The field being looked for should be a pointer to the actual struct field.
 // If found, the field info will be returned. Otherwise, nil will be returned.
-func findStructField(structValue reflect.Value, fieldValue reflect.Value) *reflect.StructField {
+func (b Builder) findStructField(structValue reflect.Value, fieldValue reflect.Value) *reflect.StructField {
+	t := fieldValue.Elem().Type()
+	if v, ok := fieldValue.Elem().Interface().(driver.Valuer); ok{
+		val, err := v.Value()
+		if err != nil {
+			panic(err)
+		}
+		t = reflect.TypeOf(val)
+	}
+
 	ptr := fieldValue.Pointer()
 	for i := structValue.NumField() - 1; i >= 0; i-- {
 		sf := structValue.Type().Field(i)
 		if ptr == structValue.Field(i).UnsafeAddr() {
 			// do additional type comparison because it's possible that the address of
 			// an embedded struct is the same as the first field of the embedded struct
-			if sf.Type == fieldValue.Elem().Type() {
+			if  sf.Type.Kind() == reflect.Struct {
+				if sf.Type == t {
+					return &sf
+				}
+			} else {
 				return &sf
 			}
 		}
@@ -84,7 +116,7 @@ func findStructField(structValue reflect.Value, fieldValue reflect.Value) *refle
 				fi = fi.Elem()
 			}
 			if fi.Kind() == reflect.Struct {
-				if f := findStructField(fi, fieldValue); f != nil {
+				if f := b.findStructField(fi, fieldValue); f != nil {
 					return f
 				}
 			}

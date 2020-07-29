@@ -85,7 +85,7 @@ func (p Builder) SelectOne(t Table) (string, interface{}) {
 }
 
 func (p Builder) NamedFields(t Table) namedFields {
-	return getColumnNames(p.Tag(), t)
+	return p.getColumnNames(t)
 }
 
 func (p Builder) Insert(t Table) (string, []interface{}) {

@@ -1,8 +1,9 @@
-package partoo
+package partoo_test
 
 import (
 	"reflect"
 	"testing"
+	"github.com/byrnedo/partoo"
 )
 
 type baseModel struct {
@@ -14,8 +15,8 @@ func (t baseModel) TableName() string {
 	return "test"
 }
 
-func (t *baseModel) Columns() Cols {
-	return Cols{
+func (t *baseModel) Columns() partoo.Cols {
+	return partoo.Cols{
 		&t.ID,
 		&t.Foo,
 	}
@@ -34,17 +35,17 @@ func (m manualIDModel) AutoID() bool {
 func TestColNames_Prefix(t *testing.T) {
 
 	m := &baseModel{}
-	p := New(Postgres)
+	p := partoo.New(partoo.Postgres)
 	cols := p.NamedFields(m)
 	aliased := cols.Names().Prefix("alias")
-	if reflect.DeepEqual(aliased, ColNames{"alias.id", "alias.foo"}) == false {
+	if reflect.DeepEqual(aliased, partoo.ColNames{"alias.id", "alias.foo"}) == false {
 		t.Fatal("wrong aliases", aliased)
 	}
 }
 
 func TestInsert(t *testing.T) {
 	m := &baseModel{}
-	p := New(Postgres)
+	p := partoo.New(partoo.Postgres)
 
 	sqlStr, args := p.Insert(m)
 	if sqlStr != "INSERT INTO test (foo) VALUES ($1)" {
@@ -66,7 +67,7 @@ func TestInsert(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	m := &baseModel{}
-	p := New(Postgres)
+	p := partoo.New(partoo.Postgres)
 
 	sqlStr, args := p.Update(m)
 	if sqlStr != "UPDATE test SET foo = $1" {
@@ -80,7 +81,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateOne(t *testing.T) {
 	m := &baseModel{}
-	p := New(Postgres)
+	p := partoo.New(partoo.Postgres)
 
 	sqlStr, args := p.UpdateOne(m)
 	if sqlStr != "UPDATE test SET foo = $1 WHERE id = $2" {
@@ -95,7 +96,7 @@ func TestUpdateOne(t *testing.T) {
 
 func TestPartoo_UpsertOne(t *testing.T) {
 	m := &baseModel{}
-	p := New(Postgres)
+	p := partoo.New(partoo.Postgres)
 	sqlStr, args := p.UpsertOne(m)
 	if sqlStr != "INSERT INTO test (foo) VALUES ($1) ON CONFLICT (id) DO UPDATE SET foo = $2" {
 		t.Fatal(sqlStr)

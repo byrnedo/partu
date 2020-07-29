@@ -144,12 +144,12 @@ func (p partoo) upsertMysql(t Table) (string, []interface{}) {
 	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
 
 	return fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE SET %s",
+		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
 		t.TableName(),
 		strings.Join(cols.Names()[1:].Strings(), ","),
 		p.placeholders(2, len(cols)),
 		setPlaceholders,
-	), cols.Fields()[1:]
+	), append(cols.Fields()[1:], cols.Fields()[1:]...)
 }
 
 func (p partoo) upsertPostgres(t Table) (string, []interface{}) {

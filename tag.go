@@ -5,14 +5,14 @@ import (
 )
 
 // dumbStructToHeader converts a struct of string fields (with tag 'header') to a http.Header map
-type NamedField struct {
+type namedField struct {
 	Name string
 	Field interface{}
 }
 
-type NamedFields []NamedField
+type namedFields []namedField
 
-func (cm NamedFields) Names() (ret ColNames) {
+func (cm namedFields) Names() (ret ColNames) {
 	idx := 0
 	ret = make([]string, len(cm))
 	for _, v := range cm {
@@ -23,7 +23,7 @@ func (cm NamedFields) Names() (ret ColNames) {
 }
 
 
-func (cm NamedFields) Fields() (ret []interface{}) {
+func (cm namedFields) Fields() (ret []interface{}) {
 	idx := 0
 	ret = make([]interface{}, len(cm))
 	for _, v := range cm {
@@ -33,7 +33,7 @@ func (cm NamedFields) Fields() (ret []interface{}) {
 	return
 }
 
-func getColumnNames(table Table) (ret []NamedField) {
+func getColumnNames(table Table) (ret []namedField) {
 	t := reflect.TypeOf(table)
 
 	v := reflect.ValueOf(table)
@@ -50,7 +50,7 @@ func getColumnNames(table Table) (ret []NamedField) {
 		if colName == "" {
 			panic("struct field must have `sql` tag if included in Columns() output")
 		}
-		ret = append(ret, NamedField{Name: colName, Field: col})
+		ret = append(ret, namedField{Name: colName, Field: col})
 	}
 	return
 }

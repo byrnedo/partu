@@ -12,15 +12,15 @@ const (
 	Postgres Dialect = "postgres"
 )
 
-type Partoo struct {
+type partoo struct {
 	dialect Dialect
 }
 
-func New(dialect Dialect) *Partoo {
-	return &Partoo{dialect: dialect}
+func New(dialect Dialect) *partoo {
+	return &partoo{dialect: dialect}
 }
 
-func (p Partoo) placeholder(i int) string {
+func (p partoo) placeholder(i int) string {
 	switch p.dialect {
 	case Mysql:
 		return fmt.Sprintf("$k")
@@ -29,7 +29,7 @@ func (p Partoo) placeholder(i int) string {
 	}
 }
 
-func (p Partoo) placeholders(low, high int) string {
+func (p partoo) placeholders(low, high int) string {
 	parts := make([]string, high-low)
 	for i := low; i < high; i++ {
 		parts[i-low] = p.placeholder(i)
@@ -63,7 +63,7 @@ func (c ColNames) Strings() []string {
 	return c
 }
 
-func (p Partoo) Select(t Table) string {
+func (p partoo) Select(t Table) string {
 	cols := p.NamedFields(t)
 	return fmt.Sprintf(
 		"SELECT %s FROM %s",
@@ -72,7 +72,7 @@ func (p Partoo) Select(t Table) string {
 	)
 }
 
-func (p Partoo) SelectOne(t Table) (string, interface{}) {
+func (p partoo) SelectOne(t Table) (string, interface{}) {
 	cols := p.NamedFields(t)
 	first := cols[0]
 	return fmt.Sprintf(
@@ -83,11 +83,11 @@ func (p Partoo) SelectOne(t Table) (string, interface{}) {
 	), first.Field
 }
 
-func (p Partoo) NamedFields(t Table) NamedFields {
+func (p partoo) NamedFields(t Table) namedFields {
 	return getColumnNames(t)
 }
 
-func (p Partoo) Insert(t Table) (string, []interface{}) {
+func (p partoo) Insert(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
 	return fmt.Sprintf(
@@ -98,7 +98,7 @@ func (p Partoo) Insert(t Table) (string, []interface{}) {
 	), cols.Fields()[1:]
 }
 
-func (p Partoo) Update(t Table) (string, []interface{}) {
+func (p partoo) Update(t Table) (string, []interface{}) {
 	namedFields := p.NamedFields(t)
 
 	names := namedFields.Names()[1:]
@@ -114,7 +114,7 @@ func (p Partoo) Update(t Table) (string, []interface{}) {
 	), namedFields.Fields()[1:]
 }
 
-func (p Partoo) UpdateOne(t Table) (string, []interface{}) {
+func (p partoo) UpdateOne(t Table) (string, []interface{}) {
 	upd, args := p.Update(t)
 	namedFields := p.NamedFields(t)
 	fields := namedFields.Fields()

@@ -26,15 +26,15 @@ type AutoID interface {
 	AutoID() bool
 }
 
-type partoo struct {
+type Builder struct {
 	dialect Dialect
 }
 
-func New(dialect Dialect) *partoo {
-	return &partoo{dialect: dialect}
+func New(dialect Dialect) *Builder {
+	return &Builder{dialect: dialect}
 }
 
-func (p partoo) placeholder(i int) string {
+func (p Builder) placeholder(i int) string {
 	switch p.dialect {
 	case Mysql:
 		return fmt.Sprintf("$k")
@@ -43,7 +43,7 @@ func (p partoo) placeholder(i int) string {
 	}
 }
 
-func (p partoo) placeholders(low, high int) string {
+func (p Builder) placeholders(low, high int) string {
 	parts := make([]string, high-low)
 	for i := low; i < high; i++ {
 		parts[i-low] = p.placeholder(i)
@@ -51,7 +51,7 @@ func (p partoo) placeholders(low, high int) string {
 	return strings.Join(parts, ",")
 }
 
-func (p partoo) Select(t Table) string {
+func (p Builder) Select(t Table) string {
 	cols := p.NamedFields(t)
 	return fmt.Sprintf(
 		"SELECT %s FROM %s",
@@ -60,7 +60,7 @@ func (p partoo) Select(t Table) string {
 	)
 }
 
-func (p partoo) SelectOne(t Table) (string, interface{}) {
+func (p Builder) SelectOne(t Table) (string, interface{}) {
 	cols := p.NamedFields(t)
 	first := cols[0]
 	return fmt.Sprintf(
@@ -71,11 +71,11 @@ func (p partoo) SelectOne(t Table) (string, interface{}) {
 	), first.Field
 }
 
-func (p partoo) NamedFields(t Table) namedFields {
+func (p Builder) NamedFields(t Table) namedFields {
 	return getColumnNames(t)
 }
 
-func (p partoo) Insert(t Table) (string, []interface{}) {
+func (p Builder) Insert(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
 	autoID, ok := t.(AutoID)
@@ -94,7 +94,7 @@ func (p partoo) Insert(t Table) (string, []interface{}) {
 	), args
 }
 
-func (p partoo) Update(t Table) (string, []interface{}) {
+func (p Builder) Update(t Table) (string, []interface{}) {
 	namedFields := p.NamedFields(t)
 
 	setPlaceholders := p.generateUpdatePlaceholders(namedFields, 1)
@@ -106,7 +106,7 @@ func (p partoo) Update(t Table) (string, []interface{}) {
 	), namedFields.Fields()[1:]
 }
 
-func (p partoo) UpdateOne(t Table) (string, []interface{}) {
+func (p Builder) UpdateOne(t Table) (string, []interface{}) {
 	upd, args := p.Update(t)
 	namedFields := p.NamedFields(t)
 	fields := namedFields.Fields()
@@ -115,14 +115,14 @@ func (p partoo) UpdateOne(t Table) (string, []interface{}) {
 	return fmt.Sprintf("%s WHERE %s = %s", upd, names[0], p.placeholder(len(fields))), args
 }
 
-func (p partoo) UpsertOne(t Table) (string, []interface{}) {
+func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 	if p.dialect == Mysql {
 		return p.upsertMysql(t)
 	}
 	return p.upsertPostgres(t)
 }
 
-func (p partoo) generateUpdatePlaceholders(cols namedFields, startIndex int) string {
+func (p Builder) generateUpdatePlaceholders(cols namedFields, startIndex int) string {
 
 	names := cols.Names()[1:]
 	setPlaceholders := make([]string, len(names))
@@ -133,7 +133,7 @@ func (p partoo) generateUpdatePlaceholders(cols namedFields, startIndex int) str
 	return strings.Join(setPlaceholders, ",")
 }
 
-func (p partoo) upsertMysql(t Table) (string, []interface{}) {
+func (p Builder) upsertMysql(t Table) (string, []interface{}) {
 
 	cols := p.NamedFields(t)
 
@@ -148,7 +148,7 @@ func (p partoo) upsertMysql(t Table) (string, []interface{}) {
 	), append(cols.Fields()[1:], cols.Fields()[1:]...)
 }
 
-func (p partoo) upsertPostgres(t Table) (string, []interface{}) {
+func (p Builder) upsertPostgres(t Table) (string, []interface{}) {
 
 	cols := p.NamedFields(t)
 

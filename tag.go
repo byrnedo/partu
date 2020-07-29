@@ -32,7 +32,7 @@ func (cm namedFields) Fields() (ret []interface{}) {
 	return
 }
 
-func (p partoo) ColName(table Table, field interface{}) string {
+func (p Builder) ColName(table Table, field interface{}) string {
 	return findFieldTag(reflect.ValueOf(table), reflect.ValueOf(field))
 }
 

@@ -35,7 +35,7 @@ func New(dialect Dialect) *Builder {
 	return &Builder{dialect: dialect}
 }
 
-func (p *Builder) SetTag(tag string) Builder {
+func (p *Builder) SetTag(tag string) *Builder {
 	p.tagName = tag
 	return p
 }

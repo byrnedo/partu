@@ -91,9 +91,9 @@ func (p Builder) NamedFields(t Table) namedFields {
 func (p Builder) Insert(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
-	autoID, ok := t.(AutoID)
 	colsToInsert := cols.Names()[1:].Strings()
 	args := cols.Fields()[1:]
+	autoID, ok := t.(AutoID)
 	if ok && !autoID.AutoID() {
 		colsToInsert = cols.Names().Strings()
 		args = cols.Fields()
@@ -152,13 +152,22 @@ func (p Builder) upsertMysql(t Table) (string, []interface{}) {
 
 	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
 
+
+	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
+	colsToInsert := cols.Names()[1:].Strings()
+	autoID, ok := t.(AutoID)
+	if ok && !autoID.AutoID() {
+		colsToInsert = cols.Names().Strings()
+		args = cols.Fields()
+	}
+
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
 		t.TableName(),
-		strings.Join(cols.Names()[1:].Strings(), ","),
+		strings.Join(colsToInsert, ","),
 		p.placeholders(2, len(cols)),
 		setPlaceholders,
-	), append(cols.Fields()[1:], cols.Fields()[1:]...)
+	), args
 }
 
 func (p Builder) upsertPostgres(t Table) (string, []interface{}) {
@@ -166,15 +175,22 @@ func (p Builder) upsertPostgres(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
 	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
+	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
+	colsToInsert := cols.Names()[1:].Strings()
+	autoID, ok := t.(AutoID)
+	if ok && !autoID.AutoID() {
+		colsToInsert = cols.Names().Strings()
+		args = cols.Fields()
+	}
 
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
 		t.TableName(),
-		strings.Join(cols.Names()[1:].Strings(), ","),
+		strings.Join(colsToInsert, ","),
 		p.placeholders(1, len(cols)),
 		cols[0].Name,
 		setPlaceholders,
-	), append(cols.Fields()[1:], cols.Fields()[1:]...)
+	), args
 }
 
 type ColNames []string

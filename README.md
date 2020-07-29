@@ -33,7 +33,7 @@ func (t MyModel) TableName() string {
 
 func (t *MyModel) Columns() partoo.Cols {
     return partoo.Cols{
-        t.ID,
+        &t.ID,
         &t.Foo,
     }
 }

@@ -1,7 +1,6 @@
 package partoo
 
 import (
-	"database/sql/driver"
 	"errors"
 	"reflect"
 	"strings"
@@ -48,7 +47,7 @@ func (p Builder) ColName(table Table, field interface{}) string {
 	return ft
 }
 
-func (p Builder) getColumnNames(table Table) (ret []namedField) {
+func (p Builder) NamedFields(table Table) (ret namedFields) {
 	t := reflect.TypeOf(table)
 
 	v := reflect.ValueOf(table)
@@ -89,13 +88,6 @@ func (b Builder) findFieldTag(structValue reflect.Value, fieldValue reflect.Valu
 // If found, the field info will be returned. Otherwise, nil will be returned.
 func (b Builder) findStructField(structValue reflect.Value, fieldValue reflect.Value) *reflect.StructField {
 	t := fieldValue.Elem().Type()
-	if v, ok := fieldValue.Elem().Interface().(driver.Valuer); ok {
-		val, err := v.Value()
-		if err != nil {
-			panic(err)
-		}
-		t = reflect.TypeOf(val)
-	}
 
 	ptr := fieldValue.Pointer()
 	for i := structValue.NumField() - 1; i >= 0; i-- {

@@ -84,10 +84,6 @@ func (p Builder) SelectOne(t Table) (string, interface{}) {
 	), first.Field
 }
 
-func (p Builder) NamedFields(t Table) namedFields {
-	return p.getColumnNames(t)
-}
-
 func (p Builder) Insert(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
@@ -151,7 +147,6 @@ func (p Builder) upsertMysql(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
 	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
-
 
 	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
 	colsToInsert := cols.Names()[1:].Strings()

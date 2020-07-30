@@ -2,6 +2,7 @@ package partoo
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -56,10 +57,10 @@ func (p Builder) NamedFields(table Table) (ret namedFields) {
 		v = v.Elem()
 		t = t.Elem()
 	}
-	for _, col := range table.Columns() {
+	for i, col := range table.Columns() {
 		ft, err := p.findFieldTag(v, reflect.ValueOf(col))
 		if err != nil {
-			panic(err)
+			panic(fmt.Sprintf("Columns index %d: %s", i, err.Error()))
 		}
 
 		ret = append(ret, namedField{Name: ft, Field: col})
@@ -92,7 +93,8 @@ func (b Builder) findStructField(structValue reflect.Value, fieldValue reflect.V
 	ptr := fieldValue.Pointer()
 	for i := structValue.NumField() - 1; i >= 0; i-- {
 		sf := structValue.Type().Field(i)
-		if ptr == structValue.Field(i).UnsafeAddr() {
+		sfV := structValue.Field(i)
+		if ptr == sfV.UnsafeAddr() {
 			// do additional type comparison because it's possible that the address of
 			// an embedded struct is the same as the first field of the embedded struct
 			if sf.Type.Kind() == reflect.Struct {

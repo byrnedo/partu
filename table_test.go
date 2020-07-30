@@ -48,6 +48,27 @@ func TestColNames_Prefix(t *testing.T) {
 	}
 }
 
+func TestSelect(t *testing.T) {
+
+	m := &baseModel{}
+	p := partoo.New(partoo.Postgres)
+
+	sqlStr := p.Select(m)
+	if sqlStr != "SELECT id,foo,pq_array,time" {
+		t.Fatal(sqlStr)
+	}
+
+	sqlStr = p.SelectFrom(m)
+	if sqlStr != "SELECT id,foo,pq_array,time FROM test" {
+		t.Fatal(sqlStr)
+	}
+
+	sqlStr, _ = p.SelectOne(m)
+	if sqlStr != "SELECT id,foo,pq_array,time FROM test WHERE id = $1" {
+		t.Fatal(sqlStr)
+	}
+}
+
 func TestInsert(t *testing.T) {
 	m := &baseModel{}
 	p := partoo.New(partoo.Postgres)

@@ -67,8 +67,15 @@ func (p Builder) placeholders(low, high int) string {
 func (p Builder) Select(t Table) string {
 	cols := p.NamedFields(t)
 	return fmt.Sprintf(
-		"SELECT %s FROM %s",
+		"SELECT %s",
 		strings.Join(cols.Names().Strings(), ","),
+	)
+}
+
+func (p Builder) SelectFrom(t Table) string {
+	return fmt.Sprintf(
+		"%s FROM %s",
+		p.Select(t),
 		t.TableName(),
 	)
 }
@@ -78,7 +85,7 @@ func (p Builder) SelectOne(t Table) (string, interface{}) {
 	first := cols[0]
 	return fmt.Sprintf(
 		"%s WHERE %s = %s",
-		p.Select(t),
+		p.SelectFrom(t),
 		first.Name,
 		p.placeholder(1),
 	), first.Field

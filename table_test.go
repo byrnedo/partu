@@ -9,7 +9,7 @@ import (
 
 type baseModel struct {
 	ID      string   `sql:"id"`
-	Foo     string   `sql:"foo"`
+	Foo     string   `sql:"foo,somescrap"`
 	PQArray []string `sql:"pq_array"`
 }
 

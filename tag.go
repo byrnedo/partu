@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"reflect"
+	"strings"
 )
 
 var (
@@ -77,6 +78,7 @@ func (b Builder) findFieldTag(structValue reflect.Value, fieldValue reflect.Valu
 	if colName == "" {
 		return "", errTagMissing
 	}
+	colName = strings.Split(colName, ",")[0]
 	return colName, nil
 }
 

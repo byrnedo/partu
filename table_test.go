@@ -140,3 +140,12 @@ func TestNamedFields(t *testing.T) {
 		t.Fatal(len(n))
 	}
 }
+
+func TestBuilder_ColName(t *testing.T) {
+	m := &baseModel{}
+	p := partoo.New(partoo.Postgres)
+	n := p.ColName(m, &m.Time)
+	if n != "time"{
+		t.Fatal(n)
+	}
+}

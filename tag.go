@@ -41,7 +41,13 @@ func (cm namedFields) Fields() (ret []interface{}) {
 }
 
 func (p Builder) ColName(table Table, field interface{}) string {
-	ft, err := p.findFieldTag(reflect.ValueOf(table), reflect.ValueOf(field))
+
+	v := reflect.ValueOf(table)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	ft, err := p.findFieldTag(v, reflect.ValueOf(field))
 	if err != nil {
 		panic(err)
 	}

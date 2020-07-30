@@ -158,7 +158,7 @@ func (p Builder) upsertMysql(t Table) (string, []interface{}) {
 	autoID, ok := t.(AutoID)
 	if ok && !autoID.AutoID() {
 		colsToInsert = cols.Names().Strings()
-		args = cols.Fields()
+		args = append(cols.Fields(), cols.Fields()[1:]...)
 	}
 
 	return fmt.Sprintf(
@@ -180,7 +180,7 @@ func (p Builder) upsertPostgres(t Table) (string, []interface{}) {
 	autoID, ok := t.(AutoID)
 	if ok && !autoID.AutoID() {
 		colsToInsert = cols.Names().Strings()
-		args = cols.Fields()
+		args = append(cols.Fields(), cols.Fields()[1:]...)
 	}
 
 	return fmt.Sprintf(

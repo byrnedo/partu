@@ -1,21 +1,22 @@
 # Partu
 
-Very very very simple query builder for select, insert and update commands.
+Opinionated and simple query builder for select, insert and update commands.
 Just generates sql.
 
 Supports Mysql and Postgres
 
-## Usage
+```go
+m := &MyModel{}
+p := partu.New(partu.Postgres)
+sqlStr, args := p.Insert(m)
+// Return corresponds to:
+// `INSERT INTO some_table (id,foo) VALUES ($1,$2)`, []interface{}{&m.ID, &m.Foo}
+// Or if AutoID isn't fulfilled
+// `INSERT INTO some_table (foo) VALUES ($1)`, []interface{}{&m.Foo}
+```
 
-
-### Assumptions
-
-- Your ID column is the first column in the Columns list
-- You always update every field except the ID 
-- You always select every field
 
 Implement the `Table` interface on your model type
-
 ```go
 package mine
 import (
@@ -45,17 +46,14 @@ func (t *MyModel) AutoID() bool {
 }
 ```
 
-Then use partu to build some queries:
 
-```go
-m := &MyModel{}
-p := partu.New(partu.Postgres)
-sqlStr, args := p.Insert(m)
-// Return corresponds to:
-// `INSERT INTO some_table (id,foo) VALUES ($1,$2)`, []interface{}{&m.ID, &m.Foo}
-// Or if AutoID isn't fulfilled
-// `INSERT INTO some_table (foo) VALUES ($1)`, []interface{}{&m.Foo}
-```
+
+### Assumptions
+
+- Your ID column is the first column in the Columns list
+- You always update every field except the ID 
+- You always select every field
+
 
 ### Available SQL generating methods:
 

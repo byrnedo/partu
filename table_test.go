@@ -1,7 +1,7 @@
-package partoo_test
+package partu_test
 
 import (
-	"github.com/byrnedo/partoo"
+	"github.com/byrnedo/partu"
 	"github.com/lib/pq"
 	"reflect"
 	"testing"
@@ -20,8 +20,8 @@ func (t baseModel) TableName() string {
 	return "test"
 }
 
-func (t *baseModel) Columns() partoo.Cols {
-	return partoo.Cols{
+func (t *baseModel) Columns() partu.Cols {
+	return partu.Cols{
 		&t.ID,
 		&t.Foo,
 		pq.Array(&t.PQArray),
@@ -40,10 +40,10 @@ func (m manualIDModel) AutoID() bool {
 func TestColNames_Prefix(t *testing.T) {
 
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 	cols := p.NamedFields(m)
 	aliased := cols.Names().Prefix("alias")
-	if reflect.DeepEqual(aliased, partoo.ColNames{"alias.id", "alias.foo", "alias.pq_array", "alias.time"}) == false {
+	if reflect.DeepEqual(aliased, partu.ColNames{"alias.id", "alias.foo", "alias.pq_array", "alias.time"}) == false {
 		t.Fatal("wrong aliases", aliased)
 	}
 }
@@ -51,7 +51,7 @@ func TestColNames_Prefix(t *testing.T) {
 func TestSelect(t *testing.T) {
 
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 
 	sqlStr := p.Select(m)
 	if sqlStr != "SELECT id,foo,pq_array,time" {
@@ -71,7 +71,7 @@ func TestSelect(t *testing.T) {
 
 func TestInsert(t *testing.T) {
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 
 	sqlStr, args := p.Insert(m)
 	if sqlStr != "INSERT INTO test (foo,pq_array,time) VALUES ($1,$2,$3)" {
@@ -93,7 +93,7 @@ func TestInsert(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 
 	sqlStr, args := p.Update(m)
 	if sqlStr != "UPDATE test SET foo = $1,pq_array = $2,time = $3" {
@@ -107,7 +107,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateOne(t *testing.T) {
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 
 	sqlStr, args := p.UpdateOne(m)
 	if sqlStr != "UPDATE test SET foo = $1,pq_array = $2,time = $3 WHERE id = $4" {
@@ -121,7 +121,7 @@ func TestUpdateOne(t *testing.T) {
 
 func TestPartoo_UpsertOne(t *testing.T) {
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 	sqlStr, args := p.UpsertOne(m)
 	if sqlStr != "INSERT INTO test (foo,pq_array,time) VALUES ($1,$2,$3) ON CONFLICT (id) DO UPDATE SET foo = $4,pq_array = $5,time = $6" {
 		t.Fatal(sqlStr)
@@ -133,7 +133,7 @@ func TestPartoo_UpsertOne(t *testing.T) {
 
 func TestNamedFields(t *testing.T) {
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 
 	n := p.NamedFields(m)
 	if len(n) != len(m.Columns()) {
@@ -143,7 +143,7 @@ func TestNamedFields(t *testing.T) {
 
 func TestBuilder_ColName(t *testing.T) {
 	m := &baseModel{}
-	p := partoo.New(partoo.Postgres)
+	p := partu.New(partu.Postgres)
 	n := p.ColName(m, &m.Time)
 	if n != "time"{
 		t.Fatal(n)

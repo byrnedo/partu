@@ -1,4 +1,4 @@
-package partoo
+package partu
 
 import (
 	"errors"

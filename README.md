@@ -1,4 +1,4 @@
-# Partoo
+# Partu
 
 Very very very simple query builder for select, insert and update commands.
 Just generates sql.
@@ -18,7 +18,7 @@ Implement the `Table` interface on your model type
 ```go
 package mine
 import (
-    "github.com/byrnedo/partoo"
+    "github.com/byrnedo/partu"
 )
 
 // Note you must have the tag right now, there is no default, but you can override it with `SetTag`
@@ -31,8 +31,8 @@ func (t MyModel) TableName() string {
     return "some_table"
 }
 
-func (t *MyModel) Columns() partoo.Cols {
-    return partoo.Cols{
+func (t *MyModel) Columns() partu.Cols {
+    return partu.Cols{
         &t.ID,
         &t.Foo,
     }
@@ -44,11 +44,11 @@ func (t *MyModel) AutoID() bool {
 }
 ```
 
-Then use partoo to build some queries:
+Then use partu to build some queries:
 
 ```go
 m := &MyModel{}
-p := partoo.New(partoo.Postgres)
+p := partu.New(partu.Postgres)
 sqlStr, args := p.Insert(m)
 // Return corresponds to:
 // `INSERT INTO some_table (id,foo) VALUES ($1,$2)`, []interface{}{&m.ID, &m.Foo}

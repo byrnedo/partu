@@ -113,7 +113,7 @@ func (p Builder) Insert(t Table) (string, []interface{}) {
 func (p Builder) Update(t Table) (string, []interface{}) {
 	namedFields := p.NamedFields(t)
 
-	setPlaceholders := p.generateUpdatePlaceholders(namedFields, 1)
+	setPlaceholders := p.AssignmentString(namedFields, 1)
 
 	return fmt.Sprintf(
 		"UPDATE %s\nSET %s",
@@ -142,7 +142,7 @@ func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 		args = append(cols.Fields(), cols.Fields()[1:]...)
 	}
 	insertP := p.placeholders(1, len(colsToInsert) + 1)
-	updateP := p.generateUpdatePlaceholders(cols, len(colsToInsert)+1)
+	updateP := p.AssignmentString(cols, len(colsToInsert)+1)
 	iNames := colsToInsert.String()
 
 	if p.dialect == Mysql {
@@ -151,7 +151,7 @@ func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 	return p.upsertPostgres(t, cols, iNames, insertP, updateP, args)
 }
 
-func (p Builder) generateUpdatePlaceholders(cols namedFields, startIndex int) string {
+func (p Builder) AssignmentString(cols namedFields, startIndex int) string {
 
 	names := cols.Names()[1:]
 	setPlaceholders := make([]string, len(names))
@@ -204,4 +204,32 @@ func (c ColNames) Strings() []string {
 
 func (c ColNames) String() string {
 	return strings.Join(c, ", ")
+}
+
+type namedField struct {
+	Name  string
+	Field interface{}
+}
+
+type namedFields []namedField
+
+func (cm namedFields) Names() (ret ColNames) {
+	idx := 0
+	ret = make([]string, len(cm))
+	for _, v := range cm {
+		ret[idx] = v.Name
+		idx++
+	}
+	return
+}
+
+
+func (cm namedFields) Fields() (ret []interface{}) {
+	idx := 0
+	ret = make([]interface{}, len(cm))
+	for _, v := range cm {
+		ret[idx] = v.Field
+		idx++
+	}
+	return
 }

@@ -78,4 +78,9 @@ func (t *MyModel) AutoID() bool {
     - `UPDATE [table] SET [cols = placeholders] WHERE [id] = [placeholder]`
 - `UpsertOne(t Table)`
     - `INSERT INTO [table] ([cols]) VALUES ([placeholders]) ON CONFLICT ([id]) UPDATE SET [cols = placeholders]`
+   
+### Helper functions
+
+- `AssignmentString(fields namedFields, startIndex int) string`
+    - eg. if startIndex = 1, returns `"[col1] = $1, [col2] = $2, ..."`
 

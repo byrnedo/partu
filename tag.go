@@ -12,33 +12,6 @@ var (
 	errFieldNotSupported = errors.New("at least one of the field types in Columns() is not supported")
 )
 
-// dumbStructToHeader converts a struct of string fields (with tag 'header') to a http.Header map
-type namedField struct {
-	Name  string
-	Field interface{}
-}
-
-type namedFields []namedField
-
-func (cm namedFields) Names() (ret ColNames) {
-	idx := 0
-	ret = make([]string, len(cm))
-	for _, v := range cm {
-		ret[idx] = v.Name
-		idx++
-	}
-	return
-}
-
-func (cm namedFields) Fields() (ret []interface{}) {
-	idx := 0
-	ret = make([]interface{}, len(cm))
-	for _, v := range cm {
-		ret[idx] = v.Field
-		idx++
-	}
-	return
-}
 
 func (p Builder) ColName(table Table, field interface{}) string {
 

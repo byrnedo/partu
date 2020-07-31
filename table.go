@@ -61,20 +61,20 @@ func (p Builder) placeholders(low, high int) string {
 	for i := low; i < high; i++ {
 		parts[i-low] = p.placeholder(i)
 	}
-	return strings.Join(parts, ",")
+	return strings.Join(parts, ", ")
 }
 
 func (p Builder) Select(t Table) string {
 	cols := p.NamedFields(t)
 	return fmt.Sprintf(
 		"SELECT %s",
-		strings.Join(cols.Names().Strings(), ","),
+		strings.Join(cols.Names().Strings(), ", "),
 	)
 }
 
 func (p Builder) SelectFrom(t Table) string {
 	return fmt.Sprintf(
-		"%s FROM %s",
+		"%s\nFROM %s",
 		p.Select(t),
 		t.TableName(),
 	)
@@ -84,7 +84,7 @@ func (p Builder) SelectOne(t Table) (string, interface{}) {
 	cols := p.NamedFields(t)
 	first := cols[0]
 	return fmt.Sprintf(
-		"%s WHERE %s = %s",
+		"%s\nWHERE %s = %s",
 		p.SelectFrom(t),
 		first.Name,
 		p.placeholder(1),
@@ -103,9 +103,9 @@ func (p Builder) Insert(t Table) (string, []interface{}) {
 	}
 
 	return fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES (%s)",
+		"INSERT INTO %s (%s)\nVALUES (%s)",
 		t.TableName(),
-		strings.Join(colsToInsert, ","),
+		strings.Join(colsToInsert, ", "),
 		p.placeholders(1, len(colsToInsert)+1),
 	), args
 }
@@ -116,7 +116,7 @@ func (p Builder) Update(t Table) (string, []interface{}) {
 	setPlaceholders := p.generateUpdatePlaceholders(namedFields, 1)
 
 	return fmt.Sprintf(
-		"UPDATE %s SET %s",
+		"UPDATE %s\nSET %s",
 		t.TableName(),
 		setPlaceholders,
 	), namedFields.Fields()[1:]
@@ -128,7 +128,7 @@ func (p Builder) UpdateOne(t Table) (string, []interface{}) {
 	fields := namedFields.Fields()
 	names := namedFields.Names()
 	args = append(args, fields[0])
-	return fmt.Sprintf("%s WHERE %s = %s", upd, names[0], p.placeholder(len(fields))), args
+	return fmt.Sprintf("%s\nWHERE %s = %s", upd, names[0], p.placeholder(len(fields))), args
 }
 
 func (p Builder) UpsertOne(t Table) (string, []interface{}) {
@@ -143,7 +143,7 @@ func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 	}
 	insertP := p.placeholders(1, len(colsToInsert) + 1)
 	updateP := p.generateUpdatePlaceholders(cols, len(colsToInsert)+1)
-	iNames := strings.Join(colsToInsert, ",")
+	iNames := strings.Join(colsToInsert, ", ")
 
 	if p.dialect == Mysql {
 		return p.upsertMysql(t, cols, iNames, insertP, updateP, args)
@@ -159,13 +159,13 @@ func (p Builder) generateUpdatePlaceholders(cols namedFields, startIndex int) st
 		setPlaceholders[i] = fmt.Sprintf("%s = %s", n, p.placeholder(i+startIndex))
 	}
 
-	return strings.Join(setPlaceholders, ",")
+	return strings.Join(setPlaceholders, ", ")
 }
 
 func (p Builder) upsertMysql(t Table, cols namedFields,iNames, iPlaceholders string, uPlaceholders string, args []interface{}) (string, []interface{}) {
 
 	return fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+		"INSERT INTO %s (%s)\nVALUES (%s)\nON DUPLICATE KEY UPDATE\n%s",
 		t.TableName(),
 		iNames,
 		iPlaceholders,
@@ -176,7 +176,7 @@ func (p Builder) upsertMysql(t Table, cols namedFields,iNames, iPlaceholders str
 func (p Builder) upsertPostgres(t Table, cols namedFields, iNames, iPlaceholders string, uPlaceholders string, args []interface{}) (string, []interface{}) {
 
 	return fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
+		"INSERT INTO %s (%s)\nVALUES (%s)\nON CONFLICT (%s) DO UPDATE\nSET %s",
 		t.TableName(),
 		iNames,
 		iPlaceholders,

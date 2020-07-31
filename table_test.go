@@ -54,17 +54,17 @@ func TestSelect(t *testing.T) {
 	p := partu.New(partu.Postgres)
 
 	sqlStr := p.Select(m)
-	if sqlStr != "SELECT id,foo,pq_array,time" {
+	if sqlStr != "SELECT id, foo, pq_array, time" {
 		t.Fatal(sqlStr)
 	}
 
 	sqlStr = p.SelectFrom(m)
-	if sqlStr != "SELECT id,foo,pq_array,time FROM test" {
+	if sqlStr != "SELECT id, foo, pq_array, time\nFROM test" {
 		t.Fatal(sqlStr)
 	}
 
 	sqlStr, _ = p.SelectOne(m)
-	if sqlStr != "SELECT id,foo,pq_array,time FROM test WHERE id = $1" {
+	if sqlStr != "SELECT id, foo, pq_array, time\nFROM test\nWHERE id = $1" {
 		t.Fatal(sqlStr)
 	}
 }
@@ -74,7 +74,7 @@ func TestInsert(t *testing.T) {
 	p := partu.New(partu.Postgres)
 
 	sqlStr, args := p.Insert(m)
-	if sqlStr != "INSERT INTO test (foo,pq_array,time) VALUES ($1,$2,$3)" {
+	if sqlStr != "INSERT INTO test (foo, pq_array, time)\nVALUES ($1, $2, $3)" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 3 {
@@ -83,7 +83,7 @@ func TestInsert(t *testing.T) {
 
 	manualModel := &manualIDModel{}
 	sqlStr, args = p.Insert(manualModel)
-	if sqlStr != "INSERT INTO test (id,foo,pq_array,time) VALUES ($1,$2,$3,$4)" {
+	if sqlStr != "INSERT INTO test (id, foo, pq_array, time)\nVALUES ($1, $2, $3, $4)" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 4 {
@@ -96,7 +96,7 @@ func TestUpdate(t *testing.T) {
 	p := partu.New(partu.Postgres)
 
 	sqlStr, args := p.Update(m)
-	if sqlStr != "UPDATE test SET foo = $1,pq_array = $2,time = $3" {
+	if sqlStr != "UPDATE test\nSET foo = $1, pq_array = $2, time = $3" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 3 {
@@ -110,7 +110,7 @@ func TestUpdateOne(t *testing.T) {
 	p := partu.New(partu.Postgres)
 
 	sqlStr, args := p.UpdateOne(m)
-	if sqlStr != "UPDATE test SET foo = $1,pq_array = $2,time = $3 WHERE id = $4" {
+	if sqlStr != "UPDATE test\nSET foo = $1, pq_array = $2, time = $3\nWHERE id = $4" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 4 {
@@ -123,7 +123,7 @@ func TestPartoo_UpsertOne(t *testing.T) {
 	m := &baseModel{}
 	p := partu.New(partu.Postgres)
 	sqlStr, args := p.UpsertOne(m)
-	if sqlStr != "INSERT INTO test (foo,pq_array,time) VALUES ($1,$2,$3) ON CONFLICT (id) DO UPDATE SET foo = $4,pq_array = $5,time = $6" {
+	if sqlStr != "INSERT INTO test (foo, pq_array, time)\nVALUES ($1, $2, $3)\nON CONFLICT (id) DO UPDATE\nSET foo = $4, pq_array = $5, time = $6" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 6 {
@@ -132,7 +132,7 @@ func TestPartoo_UpsertOne(t *testing.T) {
 
 	p = partu.New(partu.Mysql)
 	sqlStr, args = p.UpsertOne(m)
-	if sqlStr != "INSERT INTO test (foo,pq_array,time) VALUES (?,?,?) ON DUPLICATE KEY UPDATE foo = ?,pq_array = ?,time = ?" {
+	if sqlStr != "INSERT INTO test (foo, pq_array, time)\nVALUES (?, ?, ?)\nON DUPLICATE KEY UPDATE\nfoo = ?, pq_array = ?, time = ?" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 6 {
@@ -142,7 +142,7 @@ func TestPartoo_UpsertOne(t *testing.T) {
 	p = partu.New(partu.Postgres)
 	m2 := &manualIDModel{}
 	sqlStr, args = p.UpsertOne(m2)
-	if sqlStr != "INSERT INTO test (id,foo,pq_array,time) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET foo = $5,pq_array = $6,time = $7" {
+	if sqlStr != "INSERT INTO test (id, foo, pq_array, time)\nVALUES ($1, $2, $3, $4)\nON CONFLICT (id) DO UPDATE\nSET foo = $5, pq_array = $6, time = $7" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 7 {
@@ -152,7 +152,7 @@ func TestPartoo_UpsertOne(t *testing.T) {
 	p = partu.New(partu.Mysql)
 	m2 = &manualIDModel{}
 	sqlStr, args = p.UpsertOne(m2)
-	if sqlStr != "INSERT INTO test (id,foo,pq_array,time) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE foo = ?,pq_array = ?,time = ?" {
+	if sqlStr != "INSERT INTO test (id, foo, pq_array, time)\nVALUES (?, ?, ?, ?)\nON DUPLICATE KEY UPDATE\nfoo = ?, pq_array = ?, time = ?" {
 		t.Fatal(sqlStr)
 	}
 	if len(args) != 7 {

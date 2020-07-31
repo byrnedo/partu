@@ -3,14 +3,15 @@
 Very very very simple query builder for select, insert and update commands.
 Just generates sql.
 
-If you want to do something else, write the query by hand you degenerate!
+Supports Mysql and Postgres
 
 ## Usage
+
 
 ### Assumptions
 
 - Your ID column is the first column in the Columns list
-- You always update every field except the ID
+- You always update every field except the ID 
 - You always select every field
 
 Implement the `Table` interface on your model type
@@ -56,4 +57,20 @@ sqlStr, args := p.Insert(m)
 // `INSERT INTO some_table (foo) VALUES ($1)`, []interface{}{&m.Foo}
 ```
 
-##
+### Available SQL generating methods:
+
+- `Select(t Table)`     
+    - `SELECT [cols]`
+- `SelectFrom(t Table)`
+    - `SELECT [cols] FROM [table]`
+- `SelectOne(t Table)`
+    - `SELECT [cols] FROM [table] WHERE [id] = [placeholder]`
+- `Insert(t Table)`
+    - `INSERT INTO [table] ([cols]) VALUES ([placeholders])`
+- `Update(t Table)`
+    - `UPDATE [table] SET [cols = placeholders]`
+- `UpdateOne(t Table)`
+    - `UPDATE [table] SET [cols = placeholders] WHERE [id] = [placeholder]`
+- `UpsertOne(t Table)`
+    - `INSERT INTO [table] ([cols]) VALUES ([placeholders]) ON CONFLICT ([id]) UPDATE SET [cols = placeholders]`
+

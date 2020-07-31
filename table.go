@@ -50,7 +50,7 @@ func (p Builder) Tag() string {
 func (p Builder) placeholder(i int) string {
 	switch p.dialect {
 	case Mysql:
-		return fmt.Sprintf("$k")
+		return fmt.Sprintf("?")
 	default:
 		return fmt.Sprintf("$%d", i)
 	}
@@ -132,10 +132,23 @@ func (p Builder) UpdateOne(t Table) (string, []interface{}) {
 }
 
 func (p Builder) UpsertOne(t Table) (string, []interface{}) {
-	if p.dialect == Mysql {
-		return p.upsertMysql(t)
+
+	cols := p.NamedFields(t)
+	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
+	colsToInsert := cols.Names()[1:].Strings()
+	autoID, ok := t.(AutoID)
+	if ok && !autoID.AutoID() {
+		colsToInsert = cols.Names().Strings()
+		args = append(cols.Fields(), cols.Fields()[1:]...)
 	}
-	return p.upsertPostgres(t)
+	insertP := p.placeholders(1, len(colsToInsert) + 1)
+	updateP := p.generateUpdatePlaceholders(cols, len(colsToInsert)+1)
+	iNames := strings.Join(colsToInsert, ",")
+
+	if p.dialect == Mysql {
+		return p.upsertMysql(t, cols, iNames, insertP, updateP, args)
+	}
+	return p.upsertPostgres(t, cols, iNames, insertP, updateP, args)
 }
 
 func (p Builder) generateUpdatePlaceholders(cols namedFields, startIndex int) string {
@@ -149,49 +162,26 @@ func (p Builder) generateUpdatePlaceholders(cols namedFields, startIndex int) st
 	return strings.Join(setPlaceholders, ",")
 }
 
-func (p Builder) upsertMysql(t Table) (string, []interface{}) {
-
-	cols := p.NamedFields(t)
-
-	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
-
-	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
-	colsToInsert := cols.Names()[1:].Strings()
-	autoID, ok := t.(AutoID)
-	if ok && !autoID.AutoID() {
-		colsToInsert = cols.Names().Strings()
-		args = append(cols.Fields(), cols.Fields()[1:]...)
-	}
+func (p Builder) upsertMysql(t Table, cols namedFields,iNames, iPlaceholders string, uPlaceholders string, args []interface{}) (string, []interface{}) {
 
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
 		t.TableName(),
-		strings.Join(colsToInsert, ","),
-		p.placeholders(2, len(cols)),
-		setPlaceholders,
+		iNames,
+		iPlaceholders,
+		uPlaceholders,
 	), args
 }
 
-func (p Builder) upsertPostgres(t Table) (string, []interface{}) {
-
-	cols := p.NamedFields(t)
-
-	setPlaceholders := p.generateUpdatePlaceholders(cols, len(cols))
-	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
-	colsToInsert := cols.Names()[1:].Strings()
-	autoID, ok := t.(AutoID)
-	if ok && !autoID.AutoID() {
-		colsToInsert = cols.Names().Strings()
-		args = append(cols.Fields(), cols.Fields()[1:]...)
-	}
+func (p Builder) upsertPostgres(t Table, cols namedFields, iNames, iPlaceholders string, uPlaceholders string, args []interface{}) (string, []interface{}) {
 
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
 		t.TableName(),
-		strings.Join(colsToInsert, ","),
-		p.placeholders(1, len(cols)),
+		iNames,
+		iPlaceholders,
 		cols[0].Name,
-		setPlaceholders,
+		uPlaceholders,
 	), args
 }
 

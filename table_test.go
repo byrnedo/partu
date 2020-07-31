@@ -129,6 +129,35 @@ func TestPartoo_UpsertOne(t *testing.T) {
 	if len(args) != 6 {
 		t.Fatal(len(args))
 	}
+
+	p = partu.New(partu.Mysql)
+	sqlStr, args = p.UpsertOne(m)
+	if sqlStr != "INSERT INTO test (foo,pq_array,time) VALUES (?,?,?) ON DUPLICATE KEY UPDATE foo = ?,pq_array = ?,time = ?" {
+		t.Fatal(sqlStr)
+	}
+	if len(args) != 6 {
+		t.Fatal(len(args))
+	}
+
+	p = partu.New(partu.Postgres)
+	m2 := &manualIDModel{}
+	sqlStr, args = p.UpsertOne(m2)
+	if sqlStr != "INSERT INTO test (id,foo,pq_array,time) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET foo = $5,pq_array = $6,time = $7" {
+		t.Fatal(sqlStr)
+	}
+	if len(args) != 7 {
+		t.Fatal(len(args))
+	}
+
+	p = partu.New(partu.Mysql)
+	m2 = &manualIDModel{}
+	sqlStr, args = p.UpsertOne(m2)
+	if sqlStr != "INSERT INTO test (id,foo,pq_array,time) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE foo = ?,pq_array = ?,time = ?" {
+		t.Fatal(sqlStr)
+	}
+	if len(args) != 7 {
+		t.Fatal(len(args))
+	}
 }
 
 func TestNamedFields(t *testing.T) {

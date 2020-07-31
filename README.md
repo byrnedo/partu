@@ -10,9 +10,16 @@ m := &MyModel{}
 p := partu.New(partu.Postgres)
 sqlStr, args := p.Insert(m)
 // Return corresponds to:
-// `INSERT INTO some_table (id,foo) VALUES ($1,$2)`, []interface{}{&m.ID, &m.Foo}
+//
+//  "INSERT INTO some_table (id, foo)
+//   VALUES ($1,$2)",
+//  []interface{}{&m.ID, &m.Foo}
+
 // Or if AutoID isn't fulfilled
-// `INSERT INTO some_table (foo) VALUES ($1)`, []interface{}{&m.Foo}
+//
+// "INSERT INTO some_table (foo)
+//  VALUES ($1)",
+// []interface{}{&m.Foo}
 ```
 
 

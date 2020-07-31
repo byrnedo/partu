@@ -48,117 +48,147 @@ func TestColNames_Prefix(t *testing.T) {
 	}
 }
 
-func TestSelect(t *testing.T) {
+func TestBuilders(t *testing.T) {
 
-	m := &baseModel{}
-	p := partu.New(partu.Postgres)
-
-	sqlStr := p.Select(m)
-	if sqlStr != "SELECT id, foo, pq_array, time" {
-		t.Fatal(sqlStr)
+	type test struct {
+		f          func() (string, []interface{})
+		outputSQL  string
+		outputArgs []interface{}
 	}
 
-	sqlStr = p.SelectFrom(m)
-	if sqlStr != "SELECT id, foo, pq_array, time\nFROM test" {
-		t.Fatal(sqlStr)
+	baseTable := &baseModel{}
+	manualIDTable := &manualIDModel{}
+	pPostgres := partu.New(partu.Postgres)
+	pMysql := partu.New(partu.Mysql)
+
+	tests := []test{
+		{
+			func() (string, []interface{}) {
+				return pPostgres.Select(baseTable), nil
+			},
+			"SELECT id, foo, pq_array, time", nil,
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.Select(baseTable), nil
+			},
+			"SELECT id, foo, pq_array, time", nil,
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.SelectFrom(baseTable), nil
+			},
+			"SELECT id, foo, pq_array, time\nFROM test", nil,
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.SelectFrom(baseTable), nil
+			},
+			"SELECT id, foo, pq_array, time\nFROM test", nil,
+		},
+		{
+			func() (string, []interface{}) {
+				s, a := pPostgres.SelectOne(baseTable)
+				return s, []interface{}{a}
+			},
+			"SELECT id, foo, pq_array, time\nFROM test\nWHERE id = $1", []interface{}{&baseTable.ID},
+		},
+		{
+			func() (string, []interface{}) {
+				s, a := pMysql.SelectOne(baseTable)
+				return s, []interface{}{a}
+			},
+			"SELECT id, foo, pq_array, time\nFROM test\nWHERE id = ?", baseTable.Columns()[0:1],
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.Insert(baseTable)
+			},
+			"INSERT INTO test (foo, pq_array, time)\nVALUES ($1, $2, $3)", baseTable.Columns()[1:],
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.Insert(baseTable)
+			},
+			"INSERT INTO test (foo, pq_array, time)\nVALUES (?, ?, ?)", baseTable.Columns()[1:],
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.Insert(manualIDTable)
+			},
+			"INSERT INTO test (id, foo, pq_array, time)\nVALUES ($1, $2, $3, $4)", baseTable.Columns(),
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.Insert(manualIDTable)
+			},
+			"INSERT INTO test (id, foo, pq_array, time)\nVALUES (?, ?, ?, ?)", baseTable.Columns(),
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.Update(baseTable)
+			},
+			"UPDATE test\nSET foo = $1, pq_array = $2, time = $3", baseTable.Columns()[1:],
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.Update(baseTable)
+			},
+			"UPDATE test\nSET foo = ?, pq_array = ?, time = ?", baseTable.Columns()[1:],
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.UpdateOne(baseTable)
+			},
+			"UPDATE test\nSET foo = $1, pq_array = $2, time = $3\nWHERE id = $4", append(baseTable.Columns()[1:], baseTable.Columns()[0]),
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.UpdateOne(baseTable)
+			},
+			"UPDATE test\nSET foo = ?, pq_array = ?, time = ?\nWHERE id = ?", append(baseTable.Columns()[1:], baseTable.Columns()[0]),
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.UpsertOne(baseTable)
+			},
+			"INSERT INTO test (foo, pq_array, time)\nVALUES ($1, $2, $3)\nON CONFLICT (id) DO UPDATE\nSET foo = $4, pq_array = $5, time = $6", append(baseTable.Columns()[1:], baseTable.Columns()[1:]...),
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.UpsertOne(baseTable)
+			},
+			"INSERT INTO test (foo, pq_array, time)\nVALUES (?, ?, ?)\nON DUPLICATE KEY UPDATE\nfoo = ?, pq_array = ?, time = ?", append(baseTable.Columns()[1:], baseTable.Columns()[1:]...),
+		},
+		{
+			func() (string, []interface{}) {
+				return pPostgres.UpsertOne(manualIDTable)
+			},
+			"INSERT INTO test (id, foo, pq_array, time)\nVALUES ($1, $2, $3, $4)\nON CONFLICT (id) DO UPDATE\nSET foo = $5, pq_array = $6, time = $7", append(baseTable.Columns(), baseTable.Columns()[1:]...),
+		},
+		{
+			func() (string, []interface{}) {
+				return pMysql.UpsertOne(manualIDTable)
+			},
+			"INSERT INTO test (id, foo, pq_array, time)\nVALUES (?, ?, ?, ?)\nON DUPLICATE KEY UPDATE\nfoo = ?, pq_array = ?, time = ?", append(baseTable.Columns(), baseTable.Columns()[1:]...),
+		},
+
 	}
 
-	sqlStr, _ = p.SelectOne(m)
-	if sqlStr != "SELECT id, foo, pq_array, time\nFROM test\nWHERE id = $1" {
-		t.Fatal(sqlStr)
+	for i, toRun := range tests {
+		now := time.Now()
+		sqlStr, args := toRun.f()
+		diff := time.Now().Sub(now)
+		t.Logf("time for test %d: %s", i, diff)
+		if sqlStr != toRun.outputSQL {
+			t.Fatalf("expected SQL \n`%s`,\n\tgot SQL \n`%s`", toRun.outputSQL, sqlStr)
+		}
+		if !reflect.DeepEqual(args, toRun.outputArgs) {
+			t.Fatalf("expected ARGS `%s`,\n\tgot ARGS `%s`", toRun.outputArgs, args)
+		}
 	}
 }
 
-func TestInsert(t *testing.T) {
-	m := &baseModel{}
-	p := partu.New(partu.Postgres)
-
-	sqlStr, args := p.Insert(m)
-	if sqlStr != "INSERT INTO test (foo, pq_array, time)\nVALUES ($1, $2, $3)" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 3 {
-		t.Fatal(len(args))
-	}
-
-	manualModel := &manualIDModel{}
-	sqlStr, args = p.Insert(manualModel)
-	if sqlStr != "INSERT INTO test (id, foo, pq_array, time)\nVALUES ($1, $2, $3, $4)" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 4 {
-		t.Fatal(len(args))
-	}
-}
-
-func TestUpdate(t *testing.T) {
-	m := &baseModel{}
-	p := partu.New(partu.Postgres)
-
-	sqlStr, args := p.Update(m)
-	if sqlStr != "UPDATE test\nSET foo = $1, pq_array = $2, time = $3" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 3 {
-		t.Fatal(len(args))
-	}
-	t.Log(sqlStr)
-}
-
-func TestUpdateOne(t *testing.T) {
-	m := &baseModel{}
-	p := partu.New(partu.Postgres)
-
-	sqlStr, args := p.UpdateOne(m)
-	if sqlStr != "UPDATE test\nSET foo = $1, pq_array = $2, time = $3\nWHERE id = $4" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 4 {
-		t.Fatal(len(args))
-	}
-	t.Log(sqlStr)
-}
-
-func TestPartoo_UpsertOne(t *testing.T) {
-	m := &baseModel{}
-	p := partu.New(partu.Postgres)
-	sqlStr, args := p.UpsertOne(m)
-	if sqlStr != "INSERT INTO test (foo, pq_array, time)\nVALUES ($1, $2, $3)\nON CONFLICT (id) DO UPDATE\nSET foo = $4, pq_array = $5, time = $6" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 6 {
-		t.Fatal(len(args))
-	}
-
-	p = partu.New(partu.Mysql)
-	sqlStr, args = p.UpsertOne(m)
-	if sqlStr != "INSERT INTO test (foo, pq_array, time)\nVALUES (?, ?, ?)\nON DUPLICATE KEY UPDATE\nfoo = ?, pq_array = ?, time = ?" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 6 {
-		t.Fatal(len(args))
-	}
-
-	p = partu.New(partu.Postgres)
-	m2 := &manualIDModel{}
-	sqlStr, args = p.UpsertOne(m2)
-	if sqlStr != "INSERT INTO test (id, foo, pq_array, time)\nVALUES ($1, $2, $3, $4)\nON CONFLICT (id) DO UPDATE\nSET foo = $5, pq_array = $6, time = $7" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 7 {
-		t.Fatal(len(args))
-	}
-
-	p = partu.New(partu.Mysql)
-	m2 = &manualIDModel{}
-	sqlStr, args = p.UpsertOne(m2)
-	if sqlStr != "INSERT INTO test (id, foo, pq_array, time)\nVALUES (?, ?, ?, ?)\nON DUPLICATE KEY UPDATE\nfoo = ?, pq_array = ?, time = ?" {
-		t.Fatal(sqlStr)
-	}
-	if len(args) != 7 {
-		t.Fatal(len(args))
-	}
-}
 
 func TestNamedFields(t *testing.T) {
 	m := &baseModel{}
@@ -174,7 +204,7 @@ func TestBuilder_ColName(t *testing.T) {
 	m := &baseModel{}
 	p := partu.New(partu.Postgres)
 	n := p.ColName(m, &m.Time)
-	if n != "time"{
+	if n != "time" {
 		t.Fatal(n)
 	}
 }

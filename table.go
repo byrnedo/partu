@@ -68,7 +68,7 @@ func (p Builder) Select(t Table) string {
 	cols := p.NamedFields(t)
 	return fmt.Sprintf(
 		"SELECT %s",
-		strings.Join(cols.Names().Strings(), ", "),
+		cols.Names().String(),
 	)
 }
 
@@ -94,18 +94,18 @@ func (p Builder) SelectOne(t Table) (string, interface{}) {
 func (p Builder) Insert(t Table) (string, []interface{}) {
 	cols := p.NamedFields(t)
 
-	colsToInsert := cols.Names()[1:].Strings()
+	colsToInsert := cols.Names()[1:]
 	args := cols.Fields()[1:]
 	autoID, ok := t.(AutoID)
 	if ok && !autoID.AutoID() {
-		colsToInsert = cols.Names().Strings()
+		colsToInsert = cols.Names()
 		args = cols.Fields()
 	}
 
 	return fmt.Sprintf(
 		"INSERT INTO %s (%s)\nVALUES (%s)",
 		t.TableName(),
-		strings.Join(colsToInsert, ", "),
+		colsToInsert.String(),
 		p.placeholders(1, len(colsToInsert)+1),
 	), args
 }
@@ -135,15 +135,15 @@ func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 
 	cols := p.NamedFields(t)
 	args := append(cols.Fields()[1:], cols.Fields()[1:]...)
-	colsToInsert := cols.Names()[1:].Strings()
+	colsToInsert := cols.Names()[1:]
 	autoID, ok := t.(AutoID)
 	if ok && !autoID.AutoID() {
-		colsToInsert = cols.Names().Strings()
+		colsToInsert = cols.Names()
 		args = append(cols.Fields(), cols.Fields()[1:]...)
 	}
 	insertP := p.placeholders(1, len(colsToInsert) + 1)
 	updateP := p.generateUpdatePlaceholders(cols, len(colsToInsert)+1)
-	iNames := strings.Join(colsToInsert, ", ")
+	iNames := colsToInsert.String()
 
 	if p.dialect == Mysql {
 		return p.upsertMysql(t, cols, iNames, insertP, updateP, args)
@@ -200,4 +200,8 @@ func (c ColNames) Prefix(alias string) ColNames {
 
 func (c ColNames) Strings() []string {
 	return c
+}
+
+func (c ColNames) String() string {
+	return strings.Join(c, ", ")
 }

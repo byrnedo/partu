@@ -113,7 +113,7 @@ func (p Builder) Insert(t Table) (string, []interface{}) {
 func (p Builder) Update(t Table) (string, []interface{}) {
 	namedFields := p.NamedFields(t)
 
-	setPlaceholders := p.AssignmentString(namedFields, 1)
+	setPlaceholders := p.AssignmentString(namedFields[1:], 1)
 
 	return fmt.Sprintf(
 		"UPDATE %s\nSET %s",
@@ -142,7 +142,7 @@ func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 		args = append(cols.Fields(), cols.Fields()[1:]...)
 	}
 	insertP := p.placeholders(1, len(colsToInsert) + 1)
-	updateP := p.AssignmentString(cols, len(colsToInsert)+1)
+	updateP := p.AssignmentString(cols[1:], len(colsToInsert)+1)
 	iNames := colsToInsert.String()
 
 	if p.dialect == Mysql {
@@ -153,7 +153,7 @@ func (p Builder) UpsertOne(t Table) (string, []interface{}) {
 
 func (p Builder) AssignmentString(cols namedFields, startIndex int) string {
 
-	names := cols.Names()[1:]
+	names := cols.Names()
 	setPlaceholders := make([]string, len(names))
 	for i, n := range names {
 		setPlaceholders[i] = fmt.Sprintf("%s = %s", n, p.placeholder(i+startIndex))
